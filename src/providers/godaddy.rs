@@ -48,7 +48,9 @@ pub struct Godaddy {
 impl Godaddy {
     pub async fn create<A: AsRef<str>, S: AsRef<str>, D: AsRef<str>>(api_key: A, secret: S, dns: D) -> Result<Self> {
         // current godaddy not support ipv6 so we force use ipv4
-        let client = reqwest::Client::builder().local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED)).build()?;
+        let client = reqwest::Client::builder()
+            .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
+            .build()?;
         let api_key = api_key.as_ref().to_owned();
         let secret = secret.as_ref().to_owned();
         let dns = dns.as_ref().to_owned();
@@ -57,7 +59,15 @@ impl Godaddy {
         let domain = result.root().unwrap_or("").to_owned();
         let name = dns.trim_end_matches(&domain).trim_end_matches('.').to_owned();
 
-        Ok(Godaddy { domain, name, client, cred: Credentials { api_key, secret } })
+        Ok(Godaddy {
+            domain,
+            name,
+            client,
+            cred: Credentials {
+                api_key,
+                secret,
+            },
+        })
     }
 }
 
@@ -71,11 +81,17 @@ impl Provider for Godaddy {
             IpType::V4 => "A",
             IpType::V6 => "AAAA",
         };
-        let url = format!("https://api.godaddy.com/v1/domains/{}/records/{}/{}", self.domain, kind, self.name);
+        let url = format!(
+            "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
+            self.domain, kind, self.name
+        );
         let result = self
             .client
             .get(url)
-            .header(reqwest::header::AUTHORIZATION, format!("sso-key {}:{}", self.cred.api_key, self.cred.secret))
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("sso-key {}:{}", self.cred.api_key, self.cred.secret),
+            )
             .send()
             .await?
             .json::<Vec<HashMap<String, serde_json::Value>>>()
@@ -103,7 +119,10 @@ impl Provider for Godaddy {
 
         self.client
             .patch(url)
-            .header(reqwest::header::AUTHORIZATION, format!("sso-key {}:{}", self.cred.api_key, self.cred.secret))
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("sso-key {}:{}", self.cred.api_key, self.cred.secret),
+            )
             .json(&json)
             .send()
             .await?;
@@ -115,12 +134,17 @@ impl Provider for Godaddy {
             "data": ip,
             "ttl": record.ttl,
         })];
-        let url =
-            format!("https://api.godaddy.com/v1/domains/{}/records/{}/{}", record.domain, record.kind, record.name);
+        let url = format!(
+            "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
+            record.domain, record.kind, record.name
+        );
 
         self.client
             .put(url)
-            .header(reqwest::header::AUTHORIZATION, format!("sso-key {}:{}", self.cred.api_key, self.cred.secret))
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("sso-key {}:{}", self.cred.api_key, self.cred.secret),
+            )
             .json(&json)
             .send()
             .await?;
@@ -128,12 +152,17 @@ impl Provider for Godaddy {
     }
 
     async fn delete_dns_record(&self, record: &Self::DNSRecord) -> Result<()> {
-        let url =
-            format!("https://api.godaddy.com/v1/domains/{}/records/{}/{}", record.domain, record.kind, record.name);
+        let url = format!(
+            "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
+            record.domain, record.kind, record.name
+        );
 
         self.client
             .delete(url)
-            .header(reqwest::header::AUTHORIZATION, format!("sso-key {}:{}", self.cred.api_key, self.cred.secret))
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("sso-key {}:{}", self.cred.api_key, self.cred.secret),
+            )
             .send()
             .await?;
         Ok(())

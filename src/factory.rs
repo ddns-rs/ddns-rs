@@ -13,14 +13,20 @@ use crate::{interfaces, notifiers, providers, Shutdown};
 macro_rules! from_args_str {
     ($args:ident, $key:literal) => {{
         let _hidden = $args.get($key).ok_or(anyhow!(concat!("missing ", $key, " arg")))?;
-        _hidden.as_str().ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?
+        _hidden
+            .as_str()
+            .ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?
     }};
 }
 
 macro_rules! option_from_args_str {
     ($args:ident, $key:literal) => {{
         if let Some(_hidden) = $args.get($key) {
-            Some(_hidden.as_str().ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?)
+            Some(
+                _hidden
+                    .as_str()
+                    .ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?,
+            )
         } else {
             None
         }
@@ -30,7 +36,11 @@ macro_rules! option_from_args_str {
 macro_rules! option_from_args_bool {
     ($args:ident, $key:literal) => {{
         if let Some(_hidden) = $args.get($key) {
-            Some(_hidden.as_bool().ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?)
+            Some(
+                _hidden
+                    .as_bool()
+                    .ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?,
+            )
         } else {
             None
         }
@@ -40,7 +50,11 @@ macro_rules! option_from_args_bool {
 macro_rules! option_from_args_integer {
     ($args:ident, $key:literal) => {{
         if let Some(_hidden) = $args.get($key) {
-            Some(_hidden.as_integer().ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?)
+            Some(
+                _hidden
+                    .as_integer()
+                    .ok_or(anyhow!(concat!("arg ", $key, " unknown type")))?,
+            )
         } else {
             None
         }
@@ -57,7 +71,12 @@ pub(crate) async fn create_interface<S: AsRef<str>>(
             let url_v6 = from_args_str!(args, "url_v6");
             let ipv4_field_path = from_args_str!(args, "ipv4_field_path");
             let ipv6_field_path = from_args_str!(args, "ipv6_field_path");
-            Box::new(interfaces::Peer::create(url_v4, url_v6, ipv4_field_path, ipv6_field_path)?)
+            Box::new(interfaces::Peer::create(
+                url_v4,
+                url_v6,
+                ipv4_field_path,
+                ipv6_field_path,
+            )?)
         },
         "stock" => {
             let name = from_args_str!(args, "name");
@@ -102,9 +121,14 @@ pub(crate) async fn create_notifier<S: AsRef<str>>(
             let url = from_args_str!(args, "url");
             let authorization_header = from_args_str!(args, "authorization_header");
             let local_address = option_from_args_str!(args, "local_address");
-            let local_address =
-                if let Some(local_address) = local_address { Some(local_address.parse::<IpAddr>()?) } else { None };
-            Some(Box::new(notifiers::Webhook::create(url, authorization_header, local_address).await?))
+            let local_address = if let Some(local_address) = local_address {
+                Some(local_address.parse::<IpAddr>()?)
+            } else {
+                None
+            };
+            Some(Box::new(
+                notifiers::Webhook::create(url, authorization_header, local_address).await?,
+            ))
         },
         "empty" => None,
         _ => {

@@ -13,7 +13,11 @@ impl Shutdown {
     pub fn new() -> Shutdown {
         let (sender, _) = broadcast::channel(1);
         let notify = Notify::new();
-        Shutdown { shutdown: AtomicBool::new(false), sender, notify }
+        Shutdown {
+            shutdown: AtomicBool::new(false),
+            sender,
+            notify,
+        }
     }
 
     pub async fn shutdown(&self) {
