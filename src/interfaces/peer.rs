@@ -25,8 +25,12 @@ impl Peer {
         ipv4_field_path: P,
         ipv6_field_path: P,
     ) -> Result<Peer> {
-        let client_v4 = reqwest::Client::builder().local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED)).build()?;
-        let client_v6 = reqwest::Client::builder().local_address(IpAddr::V6(Ipv6Addr::UNSPECIFIED)).build()?;
+        let client_v4 = reqwest::Client::builder()
+            .local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
+            .build()?;
+        let client_v6 = reqwest::Client::builder()
+            .local_address(IpAddr::V6(Ipv6Addr::UNSPECIFIED))
+            .build()?;
         Ok(Peer {
             url_v4: url_v4.as_ref().to_owned(),
             url_v6: url_v6.as_ref().to_owned(),
@@ -57,13 +61,16 @@ impl Interface for Peer {
                 if parties.len() != 2 {
                     bail!(r#"regex extractor format must be "capture_group_number:expression""#)
                 }
-                let index =
-                    parties[0].parse::<usize>().map_err(|err| anyhow!("can't parse capture group index: {}", err))?;
+                let index = parties[0]
+                    .parse::<usize>()
+                    .map_err(|err| anyhow!("can't parse capture group index: {}", err))?;
                 match Regex::new(parties[1]) {
                     Ok(re) => {
                         let result = result.text().await?;
                         let caps = re.captures(&result).ok_or_else(|| anyhow!("can't match"))?;
-                        let content = caps.get(index).ok_or_else(|| anyhow!("can't get capture group {}", index))?;
+                        let content = caps
+                            .get(index)
+                            .ok_or_else(|| anyhow!("can't get capture group {}", index))?;
                         ips.push(content.as_str().parse()?);
                     },
                     Err(_) => {
@@ -74,7 +81,9 @@ impl Interface for Peer {
             "json" => {
                 let result = result.json::<HashMap<String, String>>().await?;
                 let result = path_value::to_value(result)?;
-                let ip = result.get::<String, _, _>(ip_field_path)?.ok_or_else(|| anyhow!("can't get ip by peer"))?;
+                let ip = result
+                    .get::<String, _, _>(ip_field_path)?
+                    .ok_or_else(|| anyhow!("can't get ip by peer"))?;
                 ips.push(ip.parse()?);
             },
             _ => {

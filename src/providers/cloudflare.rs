@@ -53,7 +53,9 @@ impl Cloudflare {
         let token = token.as_ref();
         let dns = dns.as_ref();
         let api_client = Arc::new(Client::new(
-            Credentials::UserAuthToken { token: token.to_owned() },
+            Credentials::UserAuthToken {
+                token: token.to_owned(),
+            },
             HttpApiClientConfig::default(),
             Environment::Production,
         )?);
@@ -90,7 +92,11 @@ impl Cloudflare {
             warn!("more than one zone")
         }
 
-        Ok(Cloudflare { dns: dns.to_owned(), api_client, zone_identifier: zone_result[0].id.clone() })
+        Ok(Cloudflare {
+            dns: dns.to_owned(),
+            api_client,
+            zone_identifier: zone_result[0].id.clone(),
+        })
     }
 }
 
@@ -125,11 +131,27 @@ impl Provider for Cloudflare {
 
             for dns in &dns_result {
                 match (family, &dns.content) {
-                    (IpType::V6, DnsContent::AAAA { content: ip }) => {
-                        result.push(DNSRecord { id: dns.id.clone(), ip: IpAddr::V6(*ip) });
+                    (
+                        IpType::V6,
+                        DnsContent::AAAA {
+                            content: ip,
+                        },
+                    ) => {
+                        result.push(DNSRecord {
+                            id: dns.id.clone(),
+                            ip: IpAddr::V6(*ip),
+                        });
                     },
-                    (IpType::V4, DnsContent::A { content: ip }) => {
-                        result.push(DNSRecord { id: dns.id.clone(), ip: IpAddr::V4(*ip) });
+                    (
+                        IpType::V4,
+                        DnsContent::A {
+                            content: ip,
+                        },
+                    ) => {
+                        result.push(DNSRecord {
+                            id: dns.id.clone(),
+                            ip: IpAddr::V4(*ip),
+                        });
                     },
                     _ => {},
                 }
@@ -145,8 +167,12 @@ impl Provider for Cloudflare {
 
     async fn create_dns_record(&self, ip: &IpAddr, ttl: u32) -> Result<()> {
         let content = match *ip {
-            IpAddr::V6(ip) => DnsContent::AAAA { content: ip },
-            IpAddr::V4(ip) => DnsContent::A { content: ip },
+            IpAddr::V6(ip) => DnsContent::AAAA {
+                content: ip,
+            },
+            IpAddr::V4(ip) => DnsContent::A {
+                content: ip,
+            },
         };
         self.api_client
             .request(&CreateDnsRecord {
@@ -166,14 +192,23 @@ impl Provider for Cloudflare {
 
     async fn update_dns_record(&self, record: &Self::DNSRecord, ip: &IpAddr) -> Result<()> {
         let content = match *ip {
-            IpAddr::V6(ip) => DnsContent::AAAA { content: ip },
-            IpAddr::V4(ip) => DnsContent::A { content: ip },
+            IpAddr::V6(ip) => DnsContent::AAAA {
+                content: ip,
+            },
+            IpAddr::V4(ip) => DnsContent::A {
+                content: ip,
+            },
         };
         self.api_client
             .request(&UpdateDnsRecord {
                 zone_identifier: &self.zone_identifier,
                 identifier: &record.id,
-                params: UpdateDnsRecordParams { ttl: None, proxied: None, name: &self.dns, content },
+                params: UpdateDnsRecordParams {
+                    ttl: None,
+                    proxied: None,
+                    name: &self.dns,
+                    content,
+                },
             })
             .await?;
 
@@ -182,7 +217,10 @@ impl Provider for Cloudflare {
 
     async fn delete_dns_record(&self, record: &Self::DNSRecord) -> Result<()> {
         self.api_client
-            .request(&DeleteDnsRecord { zone_identifier: &self.zone_identifier, identifier: &record.id })
+            .request(&DeleteDnsRecord {
+                zone_identifier: &self.zone_identifier,
+                identifier: &record.id,
+            })
             .await?;
 
         Ok(())

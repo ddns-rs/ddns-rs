@@ -64,22 +64,43 @@ fn setup_logger(level: log::LevelFilter, log_direction: PathBuf) -> Result<log4r
     let file_path = log_direction.join("output.log");
 
     // Build a stderr logger.
-    let console = ConsoleAppender::builder().encoder(Box::new(console_pattern)).target(Target::Stdout).build();
+    let console = ConsoleAppender::builder()
+        .encoder(Box::new(console_pattern))
+        .target(Target::Stdout)
+        .build();
 
     // Logging to log file.
     let size_trigger = SizeTrigger::new(1024 * 1024);
     let rolling_file_pattern = format!(
         "{}/archive/output.{{}}.log",
-        log_direction.as_os_str().to_str().ok_or_else(|| anyhow!("can't convert log direction to &str"))?
+        log_direction
+            .as_os_str()
+            .to_str()
+            .ok_or_else(|| anyhow!("can't convert log direction to &str"))?
     );
     let rolling = FixedWindowRoller::builder().base(0).build(&rolling_file_pattern, 10)?;
     let policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(rolling));
-    let logfile = RollingFileAppender::builder().encoder(Box::new(file_pattern)).build(file_path, Box::new(policy))?;
+    let logfile = RollingFileAppender::builder()
+        .encoder(Box::new(file_pattern))
+        .build(file_path, Box::new(policy))?;
 
     let config = log4rs::Config::builder()
-        .appender(Appender::builder().filter(Box::new(ThresholdFilter::new(level))).build("logfile", Box::new(logfile)))
-        .appender(Appender::builder().filter(Box::new(ThresholdFilter::new(level))).build("console", Box::new(console)))
-        .build(Root::builder().appender("logfile").appender("console").build(LevelFilter::Trace))?;
+        .appender(
+            Appender::builder()
+                .filter(Box::new(ThresholdFilter::new(level)))
+                .build("logfile", Box::new(logfile)),
+        )
+        .appender(
+            Appender::builder()
+                .filter(Box::new(ThresholdFilter::new(level)))
+                .build("console", Box::new(console)),
+        )
+        .build(
+            Root::builder()
+                .appender("logfile")
+                .appender("console")
+                .build(LevelFilter::Trace),
+        )?;
     Ok(log4rs::init_config(config)?)
 }
 
@@ -98,7 +119,10 @@ async fn run_task(
             IpType::V4 => ip.is_ipv6(),
             IpType::V6 => ip.is_ipv4(),
         }) {
-            warn!("ip(s) from interface is illegal, require {} but got: [{}]", family, ips_str);
+            warn!(
+                "ip(s) from interface is illegal, require {} but got: [{}]",
+                family, ips_str
+            );
             continue;
         }
         info!("got ip(s) from interface: [{}]", ips_str);
@@ -153,12 +177,20 @@ async fn run(shutdown: Arc<Shutdown>, setting: Setting) -> Result<()> {
         };
         let mut notifiers = vec![];
         for notifier in &task.notifiers {
-            let notifier = notifier_map.get(&*notifier).ok_or_else(|| anyhow!("can't find notifier define"))?.clone();
+            let notifier = notifier_map
+                .get(notifier)
+                .ok_or_else(|| anyhow!("can't find notifier define"))?
+                .clone();
             notifiers.push(notifier);
         }
-        let interface =
-            interface_map.get(&*task.interface).ok_or_else(|| anyhow!("can't find interface define"))?.clone();
-        let provider = provider_map.get(&*task.provider).ok_or_else(|| anyhow!("can't find provider define"))?.clone();
+        let interface = interface_map
+            .get(&*task.interface)
+            .ok_or_else(|| anyhow!("can't find interface define"))?
+            .clone();
+        let provider = provider_map
+            .get(&*task.provider)
+            .ok_or_else(|| anyhow!("can't find provider define"))?
+            .clone();
         let interval_duration = Duration::from_secs(task.interval as u64);
         Ok(Box::pin(async move {
             let start = Instant::now() + start_delay;
@@ -220,29 +252,34 @@ async fn run(shutdown: Arc<Shutdown>, setting: Setting) -> Result<()> {
 /// ─┴┘─┴┘┘└┘└─┘   ┴└─└─┘
 /// DNS record updater
 #[derive(Parser, Debug)]
-#[clap(name = "ddns-rs", version = "1.0", author = "Honsun Zhu <honsun@linux.com>", verbatim_doc_comment)]
+#[command(
+    name = "ddns-rs",
+    version = "1.0",
+    author = "Honsun Zhu <honsun@linux.com>",
+    verbatim_doc_comment
+)]
 struct Opts {
     /// Path of config file
-    #[clap(short, long, default_value = "config.toml")]
+    #[arg(short, long, default_value = "config.toml")]
     config: String,
     /// Verbose mode (-v, -vv, -vvv, etc.)
-    #[clap(short, long, parse(from_occurrences))]
-    verbose: i32,
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    verbose: u8,
     /// Nothing to output if specified
-    #[clap(short, long)]
+    #[arg(short, long)]
     silence: bool,
     /// Run as a daemon
     #[cfg(target_family = "unix")]
-    #[clap(short, long)]
+    #[arg(short, long)]
     daemon: bool,
     /// Used with --daemon, the path of the pid
-    #[clap(short, long)]
+    #[arg(short, long)]
     pid_path: Option<String>,
     /// Current direction, it will use '.' if not specified
-    #[clap(short = 'C', long, parse(from_os_str))]
+    #[arg(short = 'C', long)]
     current_direction: Option<PathBuf>,
     /// Current direction, it will use '.' if not specified
-    #[clap(short = 'L', long, parse(from_os_str))]
+    #[arg(short = 'L', long)]
     log_direction: Option<PathBuf>,
 }
 
@@ -419,7 +456,7 @@ fn main() {
 
                 daemonize = daemonize.stdout(stdout).stderr(stderr)
             }
-            daemonize = daemonize.working_directory(current_direction).exit_action(|| {});
+            daemonize = daemonize.working_directory(current_direction);
             match daemonize.start() {
                 Ok(_) => {
                     real_main(opts.config, log_level, log_direction);

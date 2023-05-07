@@ -54,7 +54,12 @@ impl Email {
             Some(from) => from.as_ref().to_owned(),
         };
         let to = to.as_ref().to_owned();
-        Ok(Email { mailer, subject, from, to })
+        Ok(Email {
+            mailer,
+            subject,
+            from,
+            to,
+        })
     }
 }
 
@@ -155,7 +160,11 @@ fn build_email(new_ips: &[IpAddr]) -> String {
 }
 
 fn build_email_plaintext(new_ips: &[IpAddr]) -> String {
-    let new_ips_str = new_ips.iter().map(|v| format!("\t{}\n", v)).collect::<Vec<_>>().concat();
+    let new_ips_str = new_ips
+        .iter()
+        .map(|v| format!("\t{}\n", v))
+        .collect::<Vec<_>>()
+        .concat();
     let logo = r#"
 ┌┬┐┌┬┐┌┐┌┌─┐   ┬─┐┌─┐
  ││ │││││└─┐───├┬┘└─┐
@@ -180,7 +189,9 @@ impl Notifier for Email {
                             .body(build_email_plaintext(new_ips)),
                     )
                     .singlepart(
-                        SinglePart::builder().header(header::ContentType::TEXT_HTML).body(build_email(new_ips)),
+                        SinglePart::builder()
+                            .header(header::ContentType::TEXT_HTML)
+                            .body(build_email(new_ips)),
                     ),
             )
             .unwrap();

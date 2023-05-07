@@ -68,12 +68,27 @@ where
         if dns_records.is_empty() {
             info!("remote dns record(s) is empty");
         } else {
-            let ips_str = dns_records.iter().map(|v| v.as_ref().to_string()).collect::<Vec<_>>().join(",");
+            let ips_str = dns_records
+                .iter()
+                .map(|v| v.as_ref().to_string())
+                .collect::<Vec<_>>()
+                .join(",");
             info!("got dns record(s) from remote: [{}]", ips_str);
         }
-        let new_ip_set: HashSet<_> = new_ips.iter().map(|v| HashSetItem::<'_, P> { ip: v, ref_record: None }).collect();
-        let dns_record_set: HashSet<_> =
-            dns_records.iter().map(|v| HashSetItem::<'_, P> { ip: v.as_ref(), ref_record: Some(v) }).collect();
+        let new_ip_set: HashSet<_> = new_ips
+            .iter()
+            .map(|v| HashSetItem::<'_, P> {
+                ip: v,
+                ref_record: None,
+            })
+            .collect();
+        let dns_record_set: HashSet<_> = dns_records
+            .iter()
+            .map(|v| HashSetItem::<'_, P> {
+                ip: v.as_ref(),
+                ref_record: Some(v),
+            })
+            .collect();
         let mut news: Vec<_> = new_ip_set.difference(&dns_record_set).collect();
         let mut olds: Vec<_> = dns_record_set.difference(&new_ip_set).collect();
         if force {

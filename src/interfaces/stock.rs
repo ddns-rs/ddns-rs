@@ -13,14 +13,19 @@ pub struct Stock {
 
 impl Stock {
     pub fn create<N: AsRef<str>>(name: N) -> Result<Stock> {
-        Ok(Stock { name: name.as_ref().to_owned() })
+        Ok(Stock {
+            name: name.as_ref().to_owned(),
+        })
     }
 }
 
 #[async_trait]
 impl Interface for Stock {
     async fn get_ip(&self, family: IpType) -> Result<Vec<IpAddr>> {
-        if let Some(interface) = datalink::interfaces().into_iter().find(|interface| interface.name == self.name) {
+        if let Some(interface) = datalink::interfaces()
+            .into_iter()
+            .find(|interface| interface.name == self.name)
+        {
             let result = interface
                 .ips
                 .into_iter()

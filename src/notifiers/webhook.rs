@@ -26,7 +26,11 @@ impl Webhook {
         } else {
             builder.build()?
         };
-        Ok(Webhook { url, authorization_header, client })
+        Ok(Webhook {
+            url,
+            authorization_header,
+            client,
+        })
     }
 }
 

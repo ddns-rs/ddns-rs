@@ -60,8 +60,12 @@ impl Fake {
         let ipv4_cache = Arc::new(Mutex::new(HashMap::with_capacity(10)));
         let ipv6_cache = Arc::new(Mutex::new(HashMap::with_capacity(10)));
         let (tx, mut rx) = mpsc::channel::<DNSRecord>(10);
-        let result =
-            Fake { id_index: AtomicU32::new(1), ipv4_cache: ipv4_cache.clone(), ipv6_cache: ipv6_cache.clone(), tx };
+        let result = Fake {
+            id_index: AtomicU32::new(1),
+            ipv4_cache: ipv4_cache.clone(),
+            ipv6_cache: ipv6_cache.clone(),
+            tx,
+        };
         tokio::spawn(async move {
             let mut ttl_heap = BinaryHeap::<DNSRecord>::new();
             loop {
@@ -123,14 +127,24 @@ impl Provider for Fake {
             IpAddr::V4(_) => {
                 let mut ipv4_cache = self.ipv4_cache.lock().await;
                 let deadline = Instant::now() + Duration::from_secs(ttl as u64);
-                let record = DNSRecord { id, ip: *ip, ttl, deadline };
+                let record = DNSRecord {
+                    id,
+                    ip: *ip,
+                    ttl,
+                    deadline,
+                };
                 ipv4_cache.insert(id, record.clone());
                 self.tx.send(record).await?;
             },
             IpAddr::V6(_) => {
                 let mut ipv6_cache = self.ipv6_cache.lock().await;
                 let deadline = Instant::now() + Duration::from_secs(ttl as u64);
-                let record = DNSRecord { id, ip: *ip, ttl, deadline };
+                let record = DNSRecord {
+                    id,
+                    ip: *ip,
+                    ttl,
+                    deadline,
+                };
                 ipv6_cache.insert(id, record.clone());
                 self.tx.send(record).await?;
             },
